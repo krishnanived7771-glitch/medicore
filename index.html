@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symptom Checker & Health Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b1118;
+      color: #e2e8f0;
+    }
+    
+    /* Futuristic Cyan & Medical Neon Theme Highlights */
+    .glow-cyan {
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+    }
+    .glow-cyan-lg {
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+    }
+    .glow-red {
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+    
+    /* Precision Anatomical Vector Styles */
+    .body-region {
+      fill: #152338;
+      stroke: #334155;
+      stroke-width: 1.5;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .body-region:hover {
+      fill: #0c4a6e;
+      stroke: #00f2fe;
+      filter: drop-shadow(0px 0px 8px rgba(0, 242, 254, 0.7));
+    }
+    .body-region.active {
+      fill: #0284c7;
+      stroke: #38bdf8;
+      stroke-width: 2;
+      filter: drop-shadow(0px 0px 12px rgba(0, 242, 254, 0.9));
+    }
+
+    /* Hotspot Pulsing Animations */
+    .hotspot-node {
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .hotspot-pulse {
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0% {
+        r: 6;
+        opacity: 0.8;
+        stroke-width: 2;
+      }
+      50% {
+        r: 13;
+        opacity: 0.2;
+        stroke-width: 1;
+      }
+      100% {
+        r: 6;
+        opacity: 0.8;
+        stroke-width: 2;
+      }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #00f2fe;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-cyan-500/20">
+        <i class="fa-solid fa-heart-pulse text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg text-white tracking-wide flex items-center gap-2">
+          MediCore <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">AI Diagnostic</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive Visual Symptom Assessment Tool</p>
+      </div>
+    </div>
+    <div class="hidden sm:flex items-center space-x-4 text-xs text-slate-400">
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-cyan-400"></i> Secure & Private</span>
+      <span class="flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-amber-400"></i> Non-emergency Use</span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- LEFT COLUMN: Body Map + Symptom Selector (7 Cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+      
+      <!-- Interactive Body Map Card -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col">
+        <div class="flex items-center justify-between mb-3 z-10">
+          <div>
+            <h2 class="text-base font-semibold text-white flex items-center gap-2">
+              <i class="fa-solid fa-child-reaching text-cyan-400"></i> Interactive Body Anatomy
+            </h2>
+            <p class="text-xs text-slate-400">Select a region or target hotspot point to pinpoint symptoms</p>
+          </div>
+          <button id="reset-body-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left text-cyan-400"></i> Reset Selection
+          </button>
+        </div>
+
+        <!-- SVG Container -->
+        <div class="relative flex justify-center items-center py-4 bg-slate-950/60 rounded-xl border border-slate-800/80 min-h-[420px]">
+          
+          <!-- Background Grid Overlay Effect -->
+          <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
+
+          <!-- Anatomically Precise Hologram SVG Silhouette -->
+          <svg viewBox="0 0 300 560" class="h-[400px] md:h-[440px] w-auto drop-shadow-2xl z-10 select-none">
+            
+            <g id="body-regions">
+              <!-- HEAD & NECK -->
+              <path class="body-region" data-region="head" d="
+                M 150 22 
+                C 134 22 124 35 124 55 
+                C 124 73 133 86 141 90
+                L 142 108 
+                L 158 108 
+                L 159 90 
+                C 167 86 176 73 176 55 
+                C 176 35 166 22 150 22 Z
+              " />
+
+              <!-- CHEST & UPPER TORSO -->
+              <path class="body-region" data-region="chest" d="
+                M 142 108 
+                L 115 120 
+                C 106 124 98 135 96 148
+                L 93 182 
+                L 116 182
+                L 122 195 
+                L 178 195 
+                L 184 182 
+                L 207 182 
+                L 204 148 
+                C 202 135 194 124 185 120
+                L 158 108 Z
+              " />
+
+              <!-- ABDOMEN & LOWER TORSO -->
+              <path class="body-region" data-region="abdomen" d="
+                M 122 195 
+                L 116 182
+                L 93 182
+                L 91 210
+                C 90 230 92 250 96 268
+                L 110 280
+                L 190 280
+                L 204 268
+                C 208 250 210 230 209 210
+                L 207 182
+                L 184 182
+                L 178 195 Z
+              " />
+
+              <!-- ARMS & HANDS -->
+              <!-- Left Arm -->
+              <path class="body-region" data-region="arms" d="
+                M 96 148
+                L 74 190
+                L 62 250
+                L 54 300
+                C 51 315 54 325 61 325
+                C 68 325 72 315 74 300
+                L 82 250
+                L 91 210
+                L 93 182 Z
+              " />
+              <!-- Right Arm -->
+              <path class="body-region" data-region="arms" d="
+                M 204 148
+                L 226 190
+                L 238 250
+                L 246 300
+                C 249 315 246 325 239 325
+                C 232 325 228 315 226 300
+                L 218 250
+                L 209 210
+                L 207 182 Z
+              " />
+
+              <!-- LEGS & FEET -->
+              <!-- Left Leg -->
+              <path class="body-region" data-region="legs" d="
+                M 110 280
+                L 112 340
+                C 112 370 118 410 120 450
+                L 122 510
+                C 122 522 110 528 102 528
+                L 132 528
+                C 137 528 142 520 142 510
+                L 143 450
+                C 145 410 148 370 148 340
+                L 148 280 Z
+              " />
+              <!-- Right Leg -->
+              <path class="body-region" data-region="legs" d="
+                M 190 280
+                L 188 340
+                C 188 370 182 410 180 450
+                L 178 510
+                C 178 522 190 528 198 528
+                L 168 528
+                C 163 528 158 520 158 510
+                L 157 450
+                C 155 410 152 370 152 340
+                L 152 280 Z
+              " />
+            </g>
+
+            <!-- Anatomical Inner Guidelines / Hologram Lines -->
+            <g stroke="#00f2fe" stroke-width="0.5" opacity="0.35" fill="none" pointer-events="none">
+              <!-- Collarbone -->
+              <path d="M 125 125 Q 150 135 175 125" />
+              <!-- Rib cage arc -->
+              <path d="M 125 170 Q 150 185 175 170" />
+              <!-- Waistline contour -->
+              <path d="M 120 230 Q 150 240 180 230" />
+              <!-- Knees -->
+              <circle cx="132" cy="400" r="6" />
+              <circle cx="168" cy="400" r="6" />
+            </g>
+
+            <!-- Anatomical Hotspots -->
+            <g id="body-hotspots">
+              <!-- Head Spot -->
+              <g class="hotspot-node" data-symptom="headache" data-region="head">
+                <circle cx="150" cy="55" r="10" fill="#00f2fe" fill-opacity="0.25" class="hotspot-pulse" />
+                <circle cx="150" cy="55" r="4" fill="#00f2fe" />
+              </g>
+              <!-- Eye / Vision Spot -->
+              <g class="hotspot-node" data-symptom="vision_changes" data-region="head">
+                <circle cx="158" cy="63" r="8" fill="#00f2fe" fill-opacity="0.2" class="hotspot-pulse" />
+                <circle cx="158" cy="63" r="3" fill="#38bdf8" />
+              </g>
+              <!-- Chest Spot -->
+              <g class="hotspot-node" data-symptom="chest_pain" data-region="chest">
+                <circle cx="150" cy="150" r="12" fill="#ef4444" fill-opacity="0.3" class="hotspot-pulse" />
+                <circle cx="150" cy="150" r="5" fill="#ef4444" />
+              </g>
+              <!-- Stomach Spot -->
+              <g class="hotspot-node" data-symptom="abdominal_pain" data-region="abdomen">
+                <circle cx="150" cy="235" r="10" fill="#00f2fe" fill-opacity="0.25" class="hotspot-pulse" />
+                <circle cx="150" cy="235" r="4" fill="#00f2fe" />
+              </g>
+              <!-- Joint/Leg Spot -->
+              <g class="hotspot-node" data-symptom="joint_pain" data-region="legs">
+                <circle cx="132" cy="400" r="9" fill="#00f2fe" fill-opacity="0.25" class="hotspot-pulse" />
+                <circle cx="132" cy="400" r="4" fill="#00f2fe" />
+              </g>
+            </g>
+          </svg>
+
+          <!-- Region Quick Selector Badges -->
+          <div class="absolute right-3 top-3 bottom-3 flex flex-col justify-center space-y-1.5 z-20">
+            <button data-region="all" class="region-btn active text-[11px] px-2.5 py-1 rounded-md bg-cyan-500 text-slate-950 font-semibold transition border border-cyan-400 text-left">
+              All Body
+            </button>
+            <button data-region="head" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              Head & Face
+            </button>
+            <button data-region="chest" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              Chest & Lungs
+            </button>
+            <button data-region="abdomen" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              Abdomen & Core
+            </button>
+            <button data-region="arms" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              Arms & Hands
+            </button>
+            <button data-region="legs" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              Legs & Feet
+            </button>
+            <button data-region="general" class="region-btn text-[11px] px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 hover:bg-slate-700 transition border border-slate-700 text-left">
+              General / Systemic
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Symptom Search & List Section -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+        
+        <!-- Search Bar -->
+        <div class="relative mb-4">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="symptom-search" placeholder="Type to search symptoms (e.g. fever, cough, fatigue)..." 
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition" />
+        </div>
+
+        <!-- Filtered Symptoms Header -->
+        <div class="flex items-center justify-between mb-3 text-xs text-slate-400">
+          <span id="symptom-group-label">Showing Symptoms for: <strong class="text-cyan-400">All Regions</strong></span>
+          <span id="symptom-count">0 symptoms available</span>
+        </div>
+
+        <!-- Symptom Cards Grid -->
+        <div id="symptoms-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+          <!-- Dynamic symptom items populated by JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Selected Intake & AI Predictions (5 Cols) -->
+    <section class="lg:col-span-5 flex flex-col gap-5">
+      
+      <!-- Selected Symptoms Panel -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <i class="fa-solid fa-clipboard-list text-cyan-400"></i> Selected Symptoms
+            <span id="selected-badge" class="bg-cyan-950 text-cyan-400 border border-cyan-800 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
+          </h2>
+          <button id="clear-all-btn" class="text-xs text-slate-400 hover:text-red-400 transition flex items-center gap-1">
+            <i class="fa-solid fa-trash-can"></i> Clear All
+          </button>
+        </div>
+
+        <!-- Selected Chips Container -->
+        <div id="selected-chips" class="min-h-[90px] p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex flex-wrap gap-2 items-start max-h-[160px] overflow-y-auto custom-scrollbar">
+          <p id="empty-selection-msg" class="text-xs text-slate-500 italic m-auto">No symptoms selected yet. Tap body areas or select from the list.</p>
+        </div>
+
+        <!-- Emergency Alert Container -->
+        <div id="emergency-alert" class="hidden mt-4 p-3.5 bg-red-950/60 border border-red-800/80 rounded-xl glow-red flex items-start gap-3">
+          <i class="fa-solid fa-triangle-exclamation text-red-400 text-lg mt-0.5 animate-pulse"></i>
+          <div>
+            <h4 class="text-xs font-bold text-red-300 uppercase tracking-wide">Critical Warning</h4>
+            <p id="emergency-text" class="text-xs text-red-200 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Predict Action Button -->
+        <button id="predict-btn" disabled class="mt-4 w-full py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition flex items-center justify-center gap-2 shadow-lg">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Symptoms
+        </button>
+      </div>
+
+      <!-- Results & Predictions Panel -->
+      <div id="results-panel" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex-grow flex flex-col">
+        <h2 class="text-base font-semibold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-stethoscope text-cyan-400"></i> AI Assessment Results
+        </h2>
+
+        <div id="results-content" class="flex-grow flex flex-col justify-center items-center py-6 text-center text-slate-500">
+          <i class="fa-solid fa-notes-medical text-3xl mb-2 opacity-40"></i>
+          <p class="text-xs">Select symptoms and click "Analyze Symptoms" to view potential conditions.</p>
+        </div>
+      </div>
+
+      <!-- Medical Disclaimer -->
+      <div class="p-3 bg-slate-900/50 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 leading-normal flex items-start gap-2">
+        <i class="fa-solid fa-circle-info text-amber-400 mt-0.5 flex-shrink-0"></i>
+        <span><strong>Medical Disclaimer:</strong> This tool is for informational purposes only and does not constitute medical advice. If you are experiencing a life-threatening emergency, call emergency services immediately.</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    /* =========================================================================
+       Backend Logic & Data Dictionaries (Exact Preserved Contract)
+       ========================================================================= */
+
+    const LABELS = {
+      fever: "Fever",
+      cough: "Cough",
+      fatigue: "Fatigue",
+      headache: "Headache",
+      shortness_of_breath: "Shortness of Breath",
+      chest_pain: "Chest Pain",
+      sore_throat: "Sore Throat",
+      runny_nose: "Runny Nose",
+      body_aches: "Body Aches",
+      loss_of_taste_smell: "Loss of Taste or Smell",
+      nausea: "Nausea",
+      vomiting: "Vomiting",
+      diarrhea: "Diarrhea",
+      abdominal_pain: "Abdominal Pain",
+      dizziness: "Dizziness",
+      confusion: "Confusion",
+      rash: "Skin Rash",
+      joint_pain: "Joint Pain",
+      chills: "Chills",
+      sweating: "Sweating",
+      vision_changes: "Vision Changes",
+      stiff_neck: "Stiff Neck"
+    };
+
+    const GROUPS = {
+      head: ["headache", "dizziness", "vision_changes", "stiff_neck", "confusion"],
+      chest: ["cough", "shortness_of_breath", "chest_pain"],
+      abdomen: ["nausea", "vomiting", "diarrhea", "abdominal_pain"],
+      arms: ["body_aches", "joint_pain"],
+      legs: ["body_aches", "joint_pain"],
+      general: ["fever", "fatigue", "sore_throat", "runny_nose", "body_aches", "loss_of_taste_smell", "rash", "chills", "sweating"]
+    };
+
+    const EMERGENCY_SYMPTOMS = ["chest_pain", "shortness_of_breath", "confusion", "stiff_neck"];
+    const EMERGENCY_TEXT = "One or more selected symptoms may indicate a medical emergency. Please seek immediate medical attention or call emergency services.";
+
+    const INFO = {
+      "COVID-19": "Viral respiratory illness caused by SARS-CoV-2.",
+      "Influenza (Flu)": "Contagious respiratory illness caused by influenza viruses.",
+      "Common Cold": "Mild viral infection of the upper respiratory tract.",
+      "Gastroenteritis": "Inflammation of the stomach and intestines, often called stomach flu.",
+      "Migraine": "Severe headache often accompanied by nausea and visual disturbances.",
+      "Pneumonia": "Infection that inflames air sacs in one or both lungs.",
+      "Streptococcal Pharyngitis": "Bacterial throat infection causing severe sore throat.",
+      "Tension Headache": "Common headache caused by muscle contraction or stress.",
+      "Angina / Cardiac Event": "Reduced blood flow to the heart muscle requiring emergency check."
+    };
+
+    // Simulated Backend Service Endpoint
+    function mockApiSymptoms() {
+      return Object.keys(LABELS).map(id => ({
+        id,
+        name: LABELS[id],
+        groups: Object.keys(GROUPS).filter(g => GROUPS[g].includes(id))
+      }));
+    }
+
+    function mockApiPredict(selectedIds) {
+      if (!selectedIds || selectedIds.length === 0) return [];
+
+      let scores = {
+        "COVID-19": 0,
+        "Influenza (Flu)": 0,
+        "Common Cold": 0,
+        "Gastroenteritis": 0,
+        "Migraine": 0,
+        "Pneumonia": 0,
+        "Streptococcal Pharyngitis": 0,
+        "Tension Headache": 0,
+        "Angina / Cardiac Event": 0
+      };
+
+      if (selectedIds.includes("fever")) { scores["COVID-19"] += 2; scores["Influenza (Flu)"] += 2; scores["Pneumonia"] += 2; }
+      if (selectedIds.includes("cough")) { scores["COVID-19"] += 2; scores["Influenza (Flu)"] += 2; scores["Common Cold"] += 1; scores["Pneumonia"] += 2; }
+      if (selectedIds.includes("shortness_of_breath")) { scores["COVID-19"] += 3; scores["Pneumonia"] += 3; scores["Angina / Cardiac Event"] += 2; }
+      if (selectedIds.includes("chest_pain")) { scores["Angina / Cardiac Event"] += 4; scores["Pneumonia"] += 2; }
+      if (selectedIds.includes("headache")) { scores["Migraine"] += 3; scores["Tension Headache"] += 3; scores["COVID-19"] += 1; }
+      if (selectedIds.includes("vision_changes")) { scores["Migraine"] += 3; }
+      if (selectedIds.includes("abdominal_pain") || selectedIds.includes("nausea")) { scores["Gastroenteritis"] += 3; }
+      if (selectedIds.includes("sore_throat")) { scores["Streptococcal Pharyngitis"] += 3; scores["Common Cold"] += 2; }
+
+      // Rank & categorize
+      let sorted = Object.entries(scores)
+        .filter(([_, score]) => score > 0)
+        .sort((a, b) => b[1] - a[1]);
+
+      if (sorted.length === 0) {
+        return [{
+          category: "Possible",
+          name: "General Viral Illness / Strain",
+          info: "Non-specific symptoms observed. Rest and hydration recommended."
+        }];
+      }
+
+      return sorted.map(([name, score], index) => {
+        let category = "Less likely";
+        if (index === 0) category = "Most likely";
+        else if (index <= 2) category = "Possible";
+
+        return {
+          category,
+          name,
+          info: INFO[name] || "Consult a professional for further diagnosis."
+        };
+      });
+    }
+
+    /* =========================================================================
+       UI Application Logic & Interaction Hooks
+       ========================================================================= */
+
+    let allSymptoms = [];
+    let selectedSymptomIds = new Set();
+    let currentRegionFilter = "all";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Fetch initial symptoms
+      allSymptoms = mockApiSymptoms();
+      
+      // Initial Renders
+      renderSymptomList();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      // Region Selector Buttons
+      document.querySelectorAll(".region-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const region = e.currentTarget.getAttribute("data-region");
+          setRegionFilter(region);
+        });
+      });
+
+      // SVG Body Region Clicks
+      document.querySelectorAll(".body-region").forEach(path => {
+        path.addEventListener("click", (e) => {
+          const region = e.currentTarget.getAttribute("data-region");
+          setRegionFilter(region);
+        });
+      });
+
+      // SVG Hotspot Clicks
+      document.querySelectorAll(".hotspot-node").forEach(node => {
+        node.addEventListener("click", (e) => {
+          const symptomId = e.currentTarget.getAttribute("data-symptom");
+          const region = e.currentTarget.getAttribute("data-region");
+          if (symptomId) {
+            toggleSymptom(symptomId);
+          }
+          if (region) {
+            setRegionFilter(region);
+          }
+        });
+      });
+
+      // Search Filter Input
+      document.getElementById("symptom-search").addEventListener("input", () => {
+        renderSymptomList();
+      });
+
+      // Reset Body Button
+      document.getElementById("reset-body-btn").addEventListener("click", () => {
+        setRegionFilter("all");
+      });
+
+      // Clear All Button
+      document.getElementById("clear-all-btn").addEventListener("click", () => {
+        selectedSymptomIds.clear();
+        updateSelectedUI();
+        renderSymptomList();
+      });
+
+      // Predict Button Click
+      document.getElementById("predict-btn").addEventListener("click", () => {
+        runPrediction();
+      });
+    }
+
+    function setRegionFilter(region) {
+      currentRegionFilter = region;
+
+      // Update Region Badges Styling
+      document.querySelectorAll(".region-btn").forEach(btn => {
+        const isCurrent = btn.getAttribute("data-region") === region;
+        btn.classList.toggle("active", isCurrent);
+        btn.classList.toggle("bg-cyan-500", isCurrent);
+        btn.classList.toggle("text-slate-950", isCurrent);
+        btn.classList.toggle("font-semibold", isCurrent);
+        btn.classList.toggle("bg-slate-800", !isCurrent);
+        btn.classList.toggle("text-slate-300", !isCurrent);
+      });
+
+      // Update Body Silhouette Highlighting
+      document.querySelectorAll(".body-region").forEach(path => {
+        const pathRegion = path.getAttribute("data-region");
+        path.classList.toggle("active", region !== "all" && pathRegion === region);
+      });
+
+      // Update Header Label
+      const labelMap = {
+        all: "All Regions",
+        head: "Head & Face",
+        chest: "Chest & Lungs",
+        abdomen: "Abdomen & Core",
+        arms: "Arms & Hands",
+        legs: "Legs & Feet",
+        general: "General / Systemic"
+      };
+      document.getElementById("symptom-group-label").innerHTML = 
+        `Showing Symptoms for: <strong class="text-cyan-400">${labelMap[region] || "Selected Region"}</strong>`;
+
+      renderSymptomList();
+    }
+
+    function renderSymptomList() {
+      const container = document.getElementById("symptoms-list");
+      const searchQuery = document.getElementById("symptom-search").value.toLowerCase().trim();
+
+      // Filter by Region and Search
+      const filtered = allSymptoms.filter(sym => {
+        const matchesSearch = sym.name.toLowerCase().includes(searchQuery);
+        const matchesRegion = currentRegionFilter === "all" || 
+          (GROUPS[currentRegionFilter] && GROUPS[currentRegionFilter].includes(sym.id));
+        return matchesSearch && matchesRegion;
+      });
+
+      document.getElementById("symptom-count").innerText = `${filtered.length} symptoms available`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-8 text-center text-slate-500 text-xs">
+            No symptoms match your criteria. Try searching or switching body regions.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(sym => {
+        const isSelected = selectedSymptomIds.has(sym.id);
+        const isEmergency = EMERGENCY_SYMPTOMS.includes(sym.id);
+
+        return `
+          <div onclick="toggleSymptom('${sym.id}')" 
+               class="p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between text-xs ${
+                 isSelected 
+                   ? 'bg-cyan-950/80 border-cyan-500 text-cyan-200 glow-cyan' 
+                   : 'bg-slate-950/50 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60'
+               }">
+            <span class="font-medium flex items-center gap-2">
+              ${isEmergency ? '<i class="fa-solid fa-triangle-exclamation text-amber-400 text-[10px]"></i>' : ''}
+              ${sym.name}
+            </span>
+            <div class="w-5 h-5 rounded-md flex items-center justify-center text-xs transition ${
+              isSelected ? 'bg-cyan-400 text-slate-950 font-bold' : 'bg-slate-800 text-slate-500'
+            }">
+              ${isSelected ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-plus"></i>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleSymptom(id) {
+      if (selectedSymptomIds.has(id)) {
+        selectedSymptomIds.delete(id);
+      } else {
+        selectedSymptomIds.add(id);
+      }
+      updateSelectedUI();
+      renderSymptomList();
+    }
+
+    function updateSelectedUI() {
+      const chipsContainer = document.getElementById("selected-chips");
+      const emptyMsg = document.getElementById("empty-selection-msg");
+      const badge = document.getElementById("selected-badge");
+      const predictBtn = document.getElementById("predict-btn");
+      const alertBox = document.getElementById("emergency-alert");
+      const alertText = document.getElementById("emergency-text");
+
+      const count = selectedSymptomIds.size;
+      badge.innerText = count;
+
+      // Toggle Predict Button State
+      if (count > 0) {
+        predictBtn.disabled = false;
+        predictBtn.className = "mt-4 w-full py-3 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 hover:brightness-110 transition flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 cursor-pointer";
+      } else {
+        predictBtn.disabled = true;
+        predictBtn.className = "mt-4 w-full py-3 px-4 rounded-xl font-semibold text-sm bg-slate-800 text-slate-500 cursor-not-allowed transition flex items-center justify-center gap-2 shadow-lg";
+      }
+
+      // Check Emergency Symptoms
+      const hasEmergency = Array.from(selectedSymptomIds).some(id => EMERGENCY_SYMPTOMS.includes(id));
+      if (hasEmergency) {
+        alertText.innerText = EMERGENCY_TEXT;
+        alertBox.classList.remove("hidden");
+      } else {
+        alertBox.classList.add("hidden");
+      }
+
+      // Render Selected Chips
+      if (count === 0) {
+        chipsContainer.innerHTML = `<p id="empty-selection-msg" class="text-xs text-slate-500 italic m-auto">No symptoms selected yet. Tap body areas or select from the list.</p>`;
+        return;
+      }
+
+      chipsContainer.innerHTML = Array.from(selectedSymptomIds).map(id => {
+        const name = LABELS[id] || id;
+        return `
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-cyan-950 text-cyan-300 border border-cyan-800/80 shadow-sm">
+            ${name}
+            <button onclick="toggleSymptom('${id}')" class="text-cyan-400 hover:text-red-400 transition ml-0.5">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </span>
+        `;
+      }).join('');
+    }
+
+    function runPrediction() {
+      const selectedArray = Array.from(selectedSymptomIds);
+      const predictions = mockApiPredict(selectedArray);
+      
+      const resultsContent = document.getElementById("results-content");
+
+      if (!predictions || predictions.length === 0) {
+        resultsContent.innerHTML = `
+          <div class="py-6 text-center text-slate-400 text-xs">
+            No specific diagnostic matches found. Please re-evaluate selected symptoms.
+          </div>`;
+        return;
+      }
+
+      resultsContent.innerHTML = `
+        <div class="w-full flex flex-col gap-3">
+          ${predictions.map(pred => {
+            let pillStyle = "bg-slate-800 text-slate-300 border-slate-700";
+            if (pred.category === "Most likely") pillStyle = "bg-cyan-950 text-cyan-300 border-cyan-700 glow-cyan";
+            else if (pred.category === "Possible") pillStyle = "bg-blue-950 text-blue-300 border-blue-800";
+
+            return `
+              <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-left flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-semibold text-white">${pred.name}</h3>
+                  <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border ${pillStyle}">
+                    ${pred.category}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">${pred.info}</p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>
